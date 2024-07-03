@@ -34,6 +34,7 @@ merging same stations that have different station id
 outlier removal
 
 door closing time before arrival time
+negative
 
 
 
