@@ -1,0 +1,48 @@
+Data precessing:
+
+columns meaning:
+trip id - rows with the same id describe the same bus drive (same driver, hours, kind of bus...)
+trip_id_unique - same line and hours + station information
+line_id
+direction - either 1 or 2
+alternative - ?
+cluster	- area name
+station_index - station number (ascending order)
+station_id -
+station_name -
+arrival_time -
+door_closing_time -
+arrival_is_estimated - is the arrival to the station estimated
+latitude -
+longitude -
+passengers_up -
+passengers_continue - how many people did not leave the bus
+mekadem_nipuach_luz -
+passengers_continue_menupach - number of people each sampled person represents
+
+columns to add:
+how many passengers on the bus
+total time at station (+noise?)
+distance between stations
+is between cities
+average people in this station (in total) - shows how busy is this area
+how many lines stop at this station
+how many alternative lines are there?
+how much time have passed since the last line
+trip duration
+merging same stations that have different station id
+outlier removal
+
+door closing time before arrival time
+
+
+
+
+normalization factors:
+trip_id
+line_id
+station_id
+
+
+
+
