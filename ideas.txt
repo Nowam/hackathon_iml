@@ -35,6 +35,10 @@ outlier removal
 
 door closing time before arrival time
 negative
+categorial features -
+hours range
+is masof
+
 
 
 
