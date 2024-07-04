@@ -51,6 +51,7 @@ def filter_trip_duration_outliers(df):
     return filtered_trip_durations
 
 def add_trip_start_hour(df):
+    df['arrival_time'] = pd.to_datetime(df['arrival_time'], format='%H:%M:%S')
     df['start_hour'] = df.groupby('trip_id_unique')['arrival_time'].transform('min').dt.hour
     return df
 
