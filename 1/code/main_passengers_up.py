@@ -6,6 +6,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold, cross_val_score
 from xgboost import XGBRegressor
 from hackathon_code.preprocess.passengers_up_preprocessing import preprocessing, adjust_rows
+from hackathon_code.preprocess.preprocess import preprocess_train
 
 
 def main():
