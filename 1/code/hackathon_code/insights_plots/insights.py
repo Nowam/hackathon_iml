@@ -7,7 +7,6 @@ def number_of_passenger_to_line_freq(df):
     line_total_passengers = calculate_total_passengers(df)
     line_total_passengers = line_total_passengers.drop_duplicates('trip_id_unique')
     line_total_passengers = line_total_passengers.groupby('line_id')['total_passengers'].sum()
-    print(line_total_passengers['19047'])
 
     trip_counts = df.groupby('line_id')['trip_id_unique'].nunique()
     summary_df = pd.DataFrame({
@@ -42,7 +41,8 @@ def number_of_passenger_to_line_freq(df):
     for i, txt in enumerate(outliers['line_id']):
         plt.annotate(txt, (outliers['trip_counts'].iloc[i], outliers['total_passengers'].iloc[i]))
 
-    plt.show()
+    plt.savefig("Crowded Lines.png")
+    # plt.show()
 
 
 def find_time_period_activity(df, time_period):
@@ -51,7 +51,6 @@ def find_time_period_activity(df, time_period):
     activity = add_time_period_dummies(df)
     activity = activity[activity[time_period] == 1]
     busy_stations = activity.groupby('station_id')['passengers_up'].sum().reset_index().sort_values(by="passengers_up", ascending=False)
-    print(busy_stations.head(10))
     return busy_stations
 
 
@@ -82,9 +81,10 @@ def get_busy_stations_in_noon_and_night(df):
         axes[1].text(i, v + 1, str(v), color='black', ha='center')
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig("Busy Stations.png")
+    # plt.show()
 
 if __name__ == '__main__':
-    df = pd.read_csv("data/train_bus_schedule.csv", encoding="ISO-8859-8")
+    df = pd.read_csv("../data/train_bus_schedule.csv", encoding="ISO-8859-8")
     number_of_passenger_to_line_freq(df)
     get_busy_stations_in_noon_and_night(df)
