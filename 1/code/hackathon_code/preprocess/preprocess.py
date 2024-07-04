@@ -20,27 +20,33 @@ def calculate_trip_durations(df: pd.DataFrame) -> pd.DataFrame:
     """
     return Y value for trip durations
     """
-    df['arrival_time'] = pd.to_timedelta(df['arrival_time'])
 
     # Function to calculate duration considering possible midnight span
-    def calculate_trip_duration(times):
-        duration = times.max() - times.min()
+    def calculate_trip_duration(start_time, end_time):
+        duration = end_time - start_time
         if duration < pd.Timedelta(0):
             duration += pd.Timedelta(days=1)
         return duration
 
-    # Group by trip_id_unique and calculate the trip duration
-    trip_durations = df.groupby('trip_id_unique')['arrival_time'].apply(
-        calculate_trip_duration).reset_index()
+    df['arrival_time'] = pd.to_datetime(df['arrival_time'], format='%H:%M:%S')
 
-    # Rename the columns for clarity
-    trip_durations.columns = ['trip_id_unique', 'trip_duration']
+    # Calculate the start and end times for each trip
+    start_times = df.loc[df.groupby('trip_id_unique')['station_index'].idxmin()][['trip_id_unique', 'arrival_time']]
+    end_times = df.loc[df.groupby('trip_id_unique')['station_index'].idxmax()][['trip_id_unique', 'arrival_time']]
 
-    trip_durations['trip_duration_minutes'] = trip_durations[
-                                          'trip_duration'].dt.total_seconds() / 60
+    # Merge the start and end times into a single dataframe
+    trip_times = pd.merge(start_times, end_times, on='trip_id_unique', suffixes=('_start', '_end'))
 
-    # Merge the trip durations back into the original dataframe
-    return trip_durations
+    # Calculate trip durations
+    trip_times['trip_duration'] = trip_times.apply(
+        lambda row: calculate_trip_duration(row['arrival_time_start'], row['arrival_time_end']), axis=1)
+
+    trip_times['trip_duration_minutes'] = trip_times[
+                                              'trip_duration'].dt.total_seconds() / 60
+
+    trip_times = trip_times.drop(columns=['arrival_time_start', 'arrival_time_end'])
+
+    return trip_times
 
 
 def preprocess_train(X_train: pd.DataFrame, y_train: pd.DataFrame):

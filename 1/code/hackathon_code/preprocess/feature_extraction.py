@@ -51,7 +51,7 @@ def filter_trip_duration_outliers(df):
     return filtered_trip_durations
 
 def add_trip_start_hour(df):
-    df['start_hour'] = df.groupby('trip_id_unique')['arrival_time'].transform('min').dt.components['hours']
+    df['start_hour'] = df.groupby('trip_id_unique')['arrival_time'].transform('min').dt.hour
     return df
 
 def calculate_total_passengers(df):
@@ -116,10 +116,14 @@ def feature_extraction_trip_duration(X: pd.DataFrame, trip_duration_info):
                         'arrival_is_estimated', 'passengers_continue', 'station_name',
                         'passengers_continue_menupach', 'mekadem_nipuach_luz'])
     X = calc_trip_distance(X)
+    X = X.drop(columns=['distance', 'latitude', 'longitude'])
     X = calc_num_of_stations(X)
     X = add_trip_start_hour(X)
     X = calculate_total_passengers(X)
+    X = X.drop(columns=['station_index', 'arrival_time', 'passengers_up']).drop_duplicates()
     X = estimated_trip_duration_minutes(X, trip_duration_info)
+    X = X.drop(columns=['average_speed_kmh_per_cluster'])
     X = add_time_period_dummies(X)
+    X = pd.get_dummies(X, columns=['cluster'])
 
     return X
