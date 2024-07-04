@@ -9,6 +9,7 @@ import numpy as np
 from hackathon_code.preprocess.preprocess import (preprocess_train,
                                                   calculate_trip_durations)
 from hackathon_code.preprocess.feature_extraction import feature_extraction_trip_duration
+from hackathon_code.preprocess.feature_extraction import analyze_trip_duration
 
 
 def main():
@@ -37,8 +38,10 @@ def main():
         y_test = None
 
     X_train, y_train = preprocess_train(X_train, y_train) # noqa
-    X_train = feature_extraction_trip_duration(X_train)
-    X_test = feature_extraction_trip_duration(X_test)
+    trip_duration_info = analyze_trip_duration(X_train, y)
+
+    X_train = feature_extraction_trip_duration(X_train, trip_duration_info)
+    X_test = feature_extraction_trip_duration(X_test, trip_duration_info)
 
     # Align the indices
     train = X_train.merge(y_train, on='trip_id_unique')

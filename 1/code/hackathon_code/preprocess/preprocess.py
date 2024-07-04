@@ -36,7 +36,7 @@ def calculate_trip_durations(df: pd.DataFrame) -> pd.DataFrame:
     # Rename the columns for clarity
     trip_durations.columns = ['trip_id_unique', 'trip_duration']
 
-    trip_durations['trip_duration'] = trip_durations[
+    trip_durations['trip_duration_minutes'] = trip_durations[
                                           'trip_duration'].dt.total_seconds() / 60
 
     # Merge the trip durations back into the original dataframe
