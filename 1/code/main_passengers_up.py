@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.model_selection import KFold, cross_val_score
 
 from hackathon_code.preprocess.feature_extraction import feature_extraction_passengers_up
 from hackathon_code.preprocess.preprocess import preprocess_train
@@ -22,12 +22,18 @@ def main():
     args = parser.parse_args()
 
     df = pd.read_csv(args.training_set, encoding="ISO-8859-8")
-    X, y = df.drop('passengers_up', axis=1), df['passengers_up']
+    X, y = df.drop('passengers_up', axis=1), df[['trip_id_unique', 'passengers_up']]
     if not args.test_set:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4,
-                                                            random_state=42)
+        # We want to split out full trips
+        unique_trips_train = X['trip_id_unique'].drop_duplicates().sample(
+            frac=0.8, random_state=42)
+        X_train = df.loc[df.trip_id_unique.isin(unique_trips_train)]
+        y_train = y.loc[y.trip_id_unique.isin(unique_trips_train)].passengers_up
+        X_test = df.loc[~df.trip_id_unique.isin(unique_trips_train)]
+        y_test = y.loc[~y.trip_id_unique.isin(unique_trips_train)].passengers_up
+
     else:
-        X_train, y_train = X, y
+        X_train, y_train = X, y.passengers_up
         X_test = pd.read_csv(args.test_set, encoding="ISO-8859-8")
         y_test = None
 
