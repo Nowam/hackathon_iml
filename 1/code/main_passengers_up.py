@@ -2,11 +2,10 @@ from argparse import ArgumentParser
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold, cross_val_score
-
-from hackathon_code.preprocess.feature_extraction import feature_extraction_passengers_up
+from xgboost import XGBRegressor
+from hackathon_code.preprocess.passengers_up_preprocessing import preprocessing, adjust_rows
 from hackathon_code.preprocess.preprocess import preprocess_train
 
 
@@ -22,28 +21,26 @@ def main():
     args = parser.parse_args()
 
     df = pd.read_csv(args.training_set, encoding="ISO-8859-8")
-    X, y = df.drop('passengers_up', axis=1), df[['trip_id_unique', 'passengers_up']]
+    df = preprocessing(df)
     if not args.test_set:
         # We want to split out full trips
-        unique_trips_train = X['trip_id_unique'].drop_duplicates().sample(
+        unique_trips_train = df['trip_id_unique'].drop_duplicates().sample(
             frac=0.8, random_state=42)
-        X_train = df.loc[df.trip_id_unique.isin(unique_trips_train)]
-        y_train = y.loc[y.trip_id_unique.isin(unique_trips_train)].passengers_up
-        X_test = df.loc[~df.trip_id_unique.isin(unique_trips_train)]
-        y_test = y.loc[~y.trip_id_unique.isin(unique_trips_train)].passengers_up
-
+        df_train = df.loc[df.trip_id_unique.isin(unique_trips_train)]
+        # Concatenate X_train and y_train
+        df_test = df.loc[~df.trip_id_unique.isin(unique_trips_train)]
+        test_and_train = df
     else:
-        X_train, y_train = X, y.passengers_up
+        X_train, y_train = df, df.passengers_up
         X_test = pd.read_csv(args.test_set, encoding="ISO-8859-8")
         y_test = None
 
-    X_train, y_train = preprocess_train(X_train, y_train)
-    X_train = feature_extraction_passengers_up(X_train).drop(
-        columns=['trip_id_unique_station'])
-    X_test = feature_extraction_passengers_up(X_test)
+    df_train, df_test = adjust_rows(test_and_train, df_train.copy(), df_test.copy())
 
+    X_train, y_train = df_train.drop(columns=['trip_id_unique', 'passengers_up'], axis=1), df_train['passengers_up']
+    X_test, y_test = df_test.drop(columns=['trip_id_unique', 'passengers_up']), df_test['passengers_up']
     # Initialize the model
-    model = LinearRegression()
+    model = XGBRegressor()
 
     # Perform k-fold cross-validation
     kf = KFold(n_splits=5, shuffle=True,
@@ -52,38 +49,31 @@ def main():
     # Calculate cross-validated scores
     mse_scores = cross_val_score(model, X_train, y_train, cv=kf,
                                  scoring='neg_mean_squared_error')
-    r2_scores = cross_val_score(model, X_train, y_train, cv=kf, scoring='r2')
 
     # Calculate average MSE and R2 scores
     average_mse = np.mean(-mse_scores)
-    average_r2 = np.mean(r2_scores)
 
     print(f"Average MSE on Cross-Validation: {average_mse}")
-    print(f"Average R2 Score on Cross-Validation: {average_r2}")
 
     # Train the model on the entire training set
     model.fit(X_train, y_train)
 
     # Evaluate the model on the training set
-    train_score = model.score(X_train, y_train)
     train_mse = mean_squared_error(y_train, model.predict(X_train))
 
-    print(f"Model Score on Train: {train_score}")
     print(f"MSE on Train: {train_mse}")
 
     if not args.test_set:
         # Evaluate the model on the test set
-        test_score = model.score(X_test.drop(columns=['trip_id_unique_station']),
-                                 y_test)
+
         test_mse = mean_squared_error(y_test, model.predict(
-            X_test.drop(columns=['trip_id_unique_station']))
+            X_test)
                                       )
 
-        print(f"Model Score on Test: {test_score}")
         print(f"MSE on Test: {test_mse}")
 
     if args.out:
-        X_test['passengers_up'] = model.predict(
+        X_test['passengers_up'] = model.predict0(
             X_test.drop(columns=['trip_id_unique_station'])).round()
         X_test[['trip_id_unique_station', 'passengers_up']].to_csv(args.out,
                                                                    index=False)
