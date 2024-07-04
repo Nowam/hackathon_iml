@@ -77,7 +77,7 @@ def main():
     if args.out:
         X_test['passengers_up'] = model.predict(
             X_test.drop(columns=['trip_id_unique_station'])).copy()
-        X_test[X_test['passengers_up'] < 0] = 0
+        X_test.loc[X_test['passengers_up'] < 0, 'passengers_up'] = 0
         X_test['passengers_up'] = X_test['passengers_up'].round().astype(int)
         X_test[['trip_id_unique_station', 'passengers_up']].to_csv(args.out,
                                                                    index=False)
