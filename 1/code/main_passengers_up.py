@@ -6,7 +6,6 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold, cross_val_score
 from xgboost import XGBRegressor
 from hackathon_code.preprocess.passengers_up_preprocessing import preprocessing, adjust_rows
-from hackathon_code.preprocess.preprocess import preprocess_train
 
 
 def main():
@@ -29,16 +28,17 @@ def main():
         df_train = df.loc[df.trip_id_unique.isin(unique_trips_train)]
         # Concatenate X_train and y_train
         df_test = df.loc[~df.trip_id_unique.isin(unique_trips_train)]
-        test_and_train = df
     else:
-        X_train, y_train = df, df.passengers_up
-        X_test = pd.read_csv(args.test_set, encoding="ISO-8859-8")
-        y_test = None
+        df_train = df
+        df_test = preprocessing(pd.read_csv(args.test_set, encoding="ISO-8859-8"))
+        df = pd.concat([df_train, df_test])
 
-    df_train, df_test = adjust_rows(test_and_train, df_train.copy(), df_test.copy())
-
-    X_train, y_train = df_train.drop(columns=['trip_id_unique', 'passengers_up'], axis=1), df_train['passengers_up']
-    X_test, y_test = df_test.drop(columns=['trip_id_unique', 'passengers_up']), df_test['passengers_up']
+    df_train, df_test = adjust_rows(df, df_train.copy(), df_test.copy())
+    X_train, y_train = df_train.drop(columns=['trip_id_unique', 'trip_id_unique_station', 'passengers_up'], axis=1), df_train['passengers_up']
+    if not args.test_set:
+        X_test, y_test = df_test.drop(columns=['trip_id_unique', 'passengers_up']), df_test['passengers_up']
+    else:
+        X_test = df_test.drop(columns=['trip_id_unique'])
     # Initialize the model
     model = XGBRegressor()
 
@@ -55,6 +55,8 @@ def main():
 
     print(f"Average MSE on Cross-Validation: {average_mse}")
 
+    model = XGBRegressor(n_estimators=200, max_depth=5, eta=0.1, subsample=0.7,
+                         colsample_bytree=0.8)
     # Train the model on the entire training set
     model.fit(X_train, y_train)
 
@@ -73,8 +75,10 @@ def main():
         print(f"MSE on Test: {test_mse}")
 
     if args.out:
-        X_test['passengers_up'] = model.predict0(
-            X_test.drop(columns=['trip_id_unique_station'])).round()
+        X_test['passengers_up'] = model.predict(
+            X_test.drop(columns=['trip_id_unique_station'])).copy()
+        X_test[X_test['passengers_up'] < 0] = 0
+        X_test['passengers_up'] = X_test['passengers_up'].round().astype(int)
         X_test[['trip_id_unique_station', 'passengers_up']].to_csv(args.out,
                                                                    index=False)
 
