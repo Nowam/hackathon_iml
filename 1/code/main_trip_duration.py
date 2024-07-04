@@ -84,10 +84,10 @@ def main():
 
         print(f"MSE on Test: {test_mse}")
 
-    # X_test['trip_duration_in_minutes'] = model.predict(X_test.drop(columns=['trip_id_unique']))
-    # if args.out:
-    #     X_test[['trip_id_unique', 'trip_duration_in_minutes']].to_csv(args.out,
-    #                                                                   index=False)
+    if args.out:
+        X_test['trip_duration_in_minutes'] = model.predict(X_test.drop(columns=['trip_id_unique'])).round(2)
+        X_test[['trip_id_unique', 'trip_duration_in_minutes']].to_csv(args.out,
+                                                                      index=False)
 
 
 if __name__ == '__main__':
